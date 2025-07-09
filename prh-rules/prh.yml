@@ -1,0 +1,15 @@
+# prh ルール例、自由に編集可能
+version: 1
+rules:
+  - expected: VS Code
+    pattern: /VScode|VSCode|vscode/
+    specs:
+      - from: VScode
+        to: VS Code
+        description: 私のルール：正しく「VS Code」と入力してください
+      - from: VSCode
+        to: VS Code
+        description: 私のルール：正しく「VS Code」と入力してください
+      - from: vscode
+        to: VS Code
+        description: 私のルール：正しく「VS Code」と入力してください
