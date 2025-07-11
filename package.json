@@ -2,7 +2,7 @@
   "name": "smart-proofreader",
   "displayName": "Smart Proofreader",
   "description": "Intelligent text proofreading with source-tracked PRH rules for multiple file formats",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "dawei",
   "license": "MIT",
   "repository": {
@@ -135,11 +135,11 @@
     "@types/node": "20.x",
     "eslint": "^9.25.1",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2",
-    "textlint": "^13.3.0",
-    "textlint-rule-prh": "^6.0.0"
+    "@vscode/test-electron": "^2.5.2"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "textlint": "^13.3.0",
+    "textlint-rule-prh": "^6.0.0"
   }
 }

@@ -2,6 +2,17 @@
 
 All notable changes to the "Smart Proofreader" extension will be documented in this file.
 
+## [0.0.2] - 2025-07-11
+
+### Fixed
+- **Critical Dependency Fix**: Moved `textlint` and `textlint-rule-prh` from devDependencies to dependencies
+  - This was causing the extension to fail when installed from marketplace
+  - Users were getting "Cannot find module" errors
+  - Extension now properly loads and functions when installed
+
+### Technical Changes
+- Corrected package.json dependency configuration for proper marketplace distribution
+
 ## [0.0.1] - 2025-07-11
 
 ### Added
