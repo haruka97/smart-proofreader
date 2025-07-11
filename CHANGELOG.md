@@ -2,6 +2,22 @@
 
 All notable changes to the "Smart Proofreader" extension will be documented in this file.
 
+## [0.0.5] - 2025-07-11
+
+### Fixed
+- **Rule Source Display**: Fixed issue where rules without description field couldn't display source information
+  - Rules without `description` now show "No description provided" instead of being ignored
+  - All rules now properly display their source file names regardless of description presence
+  - Affects both old format (`specs`) and new format (`pattern`) PRH rules
+
+### Enhanced
+- **Better Rule Coverage**: Now all rules contribute to source tracking, not just those with descriptions
+- **Consistent Source Display**: Improved consistency in rule source information display
+
+### Technical Improvements
+- Modified rule loading logic to include rules without description fields
+- Added fallback description text for rules missing description
+
 ## [0.0.4] - 2025-07-11
 
 ### Fixed

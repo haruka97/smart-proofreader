@@ -167,44 +167,72 @@ function loadPrhDescriptionMap() {
               : undefined;
 
           if (Array.isArray(rules)) {
-            rules.forEach((rule) => {
+            rules.forEach((rule, index) => {
+              console.log(`[DEBUG] Processing rule ${index + 1} in ${filename}:`, JSON.stringify(rule, null, 2));
+              
               if (rule.specs) {
                 // Old format: when specs are present
                 rule.specs.forEach((spec) => {
-                  if (spec.from && spec.description) {
+                  if (spec.from) {
                     if (!map[spec.from]) {
                       map[spec.from] = [];
                     }
                     map[spec.from].push({
-                      description: spec.description,
+                      description: spec.description || 'No description provided',
                       source: sourceLabel,
                       expected: spec.to || rule.expected
                     });
                     totalRules++;
                   }
                 });
-              } else if (rule.description && rule.pattern) {
+              } else if (rule.pattern && rule.expected) {
                 // New format: when specs are not present, extract candidates from pattern
                 const patternStr = rule.pattern.toString();
-                // Extract choices from regex (e.g., from /VScode|VSCode|vscode/ get VScode, VSCode, vscode)
+                console.log(`[DEBUG] Processing pattern rule: ${patternStr} -> ${rule.expected}`);
+                
+                // Extract the core pattern content
                 const matches = patternStr.match(/\/(.+?)\//);
                 if (matches && matches[1]) {
-                  const alternatives = matches[1].split("|");
-                  alternatives.forEach((alt) => {
-                    // Remove regex special characters
-                    const cleanAlt = alt.replace(/[()]/g, "");
-                    if (cleanAlt && cleanAlt !== rule.expected) {
-                      if (!map[cleanAlt]) {
-                        map[cleanAlt] = [];
+                  const patternContent = matches[1];
+                  
+                  // Handle different pattern formats
+                  if (patternContent.includes('|')) {
+                    // Multiple alternatives: /VScode|VSCode|vscode/
+                    const alternatives = patternContent.split("|");
+                    alternatives.forEach((alt) => {
+                      const cleanAlt = alt.replace(/[()]/g, "").trim();
+                      if (cleanAlt && cleanAlt !== rule.expected) {
+                        if (!map[cleanAlt]) {
+                          map[cleanAlt] = [];
+                        }
+                        map[cleanAlt].push({
+                          description: rule.description || 'No description provided',
+                          source: sourceLabel,
+                          expected: rule.expected
+                        });
+                        totalRules++;
+                        console.log(`[DEBUG] Added pattern rule: ${cleanAlt} -> ${rule.expected} [${sourceLabel}]`);
                       }
-                      map[cleanAlt].push({
-                        description: rule.description,
+                    });
+                  } else {
+                    // Single pattern: /wrong/
+                    const cleanPattern = patternContent.replace(/[()]/g, "").trim();
+                    if (cleanPattern && cleanPattern !== rule.expected) {
+                      if (!map[cleanPattern]) {
+                        map[cleanPattern] = [];
+                      }
+                      map[cleanPattern].push({
+                        description: rule.description || 'No description provided',
                         source: sourceLabel,
                         expected: rule.expected
                       });
                       totalRules++;
+                      console.log(`[DEBUG] Added single pattern rule: ${cleanPattern} -> ${rule.expected} [${sourceLabel}]`);
                     }
-                  });
+                  }
+                } else {
+                  // Pattern might be a simple string or other format
+                  console.log(`[DEBUG] Could not parse pattern: ${patternStr}`);
                 }
               }
             });
@@ -462,19 +490,48 @@ module.exports = {
           let diagMsg = msg.message;
           // Add PRH description with source file information
           const match = /^(.*?) => (.*)$/.exec(msg.message);
-          if (match && prhDescMap[match[1]]) {
-            const ruleInfos = prhDescMap[match[1]];
-            if (Array.isArray(ruleInfos)) {
+          if (match) {
+            const originalText = match[1];
+            const expectedText = match[2];
+            
+            console.log(`[DEBUG] Looking for rule info for: "${originalText}"`);
+            console.log(`[DEBUG] Available keys in prhDescMap:`, Object.keys(prhDescMap));
+            
+            let ruleInfos = prhDescMap[originalText];
+            
+            // If direct match fails, try to find a pattern that matches
+            if (!ruleInfos) {
+              console.log(`[DEBUG] Direct match failed, trying pattern matching for: "${originalText}"`);
+              for (const [key, infos] of Object.entries(prhDescMap)) {
+                try {
+                  // If the key looks like a regex pattern, try to match it
+                  if (key.includes('[') || key.includes('+') || key.includes('*') || key.includes('?')) {
+                    const regexPattern = new RegExp(key);
+                    if (regexPattern.test(originalText)) {
+                      console.log(`[DEBUG] Pattern "${key}" matches "${originalText}"`);
+                      ruleInfos = infos;
+                      break;
+                    }
+                  }
+                } catch (e) {
+                  // Ignore regex errors
+                }
+              }
+            }
+            
+            if (ruleInfos && Array.isArray(ruleInfos)) {
               if (ruleInfos.length === 1) {
                 // Single rule
                 const ruleInfo = ruleInfos[0];
-                diagMsg = `${match[1]} => ${ruleInfo.expected} [${ruleInfo.source}] (${ruleInfo.description} [${ruleInfo.source}])`;
+                diagMsg = `${originalText} => ${expectedText} [${ruleInfo.source}] (${ruleInfo.description} [${ruleInfo.source}])`;
               } else {
                 // Multiple rules
-                const expectedSources = ruleInfos.map(info => `${info.expected} [${info.source}]`).join(', ');
+                const expectedSources = ruleInfos.map(info => `${expectedText} [${info.source}]`).join(', ');
                 const descSources = ruleInfos.map(info => `${info.description} [${info.source}]`).join(', ');
-                diagMsg = `${match[1]} => ${expectedSources} (${descSources})`;
+                diagMsg = `${originalText} => ${expectedSources} (${descSources})`;
               }
+            } else {
+              console.log(`[DEBUG] No rule info found for: "${originalText}"`);
             }
           }
           diagnostics.push(
