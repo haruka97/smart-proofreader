@@ -5,6 +5,14 @@
   "version": "0.0.1",
   "publisher": "dawei",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/haruka97/smart-proofreader.git"
+  },
+  "homepage": "https://github.com/haruka97/smart-proofreader#readme",
+  "bugs": {
+    "url": "https://github.com/haruka97/smart-proofreader/issues"
+  },
   "icon": "Smart Proofreader.png",
   "keywords": ["textlint", "prh", "proofreading", "text-checker", "grammar", "writing"],
   "engines": {
