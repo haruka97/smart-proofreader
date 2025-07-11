@@ -2,7 +2,7 @@
   "name": "smart-proofreader",
   "displayName": "Smart Proofreader",
   "description": "Intelligent text proofreading with source-tracked PRH rules for multiple file formats",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "publisher": "dawei",
   "license": "MIT",
   "repository": {
@@ -55,6 +55,14 @@
       {
         "command": "smartProofreader.toggle",
         "title": "Smart Proofreader: Toggle Auto Check"
+      },
+      {
+        "command": "smartProofreader.openRulesFolder",
+        "title": "Smart Proofreader: Open Rules Folder"
+      },
+      {
+        "command": "smartProofreader.initRulesFolder",
+        "title": "Smart Proofreader: Init Rules Folder"
       }
     ],
     "configuration": {
@@ -62,8 +70,8 @@
       "properties": {
         "smartProofreader.rulesFolder": {
           "type": "string",
-          "default": "",
-          "description": "Absolute path to custom PRH rules folder. Leave empty to use default rules.",
+          "default": "~/smart-proofreader/rules/",
+          "markdownDescription": "Path to custom PRH rules folder. Windows users use: `C:\\Users\\[username]\\smart-proofreader\\rules\\`  \n\n**[Init Rules Folder](command:smartProofreader.initRulesFolder)**",
           "scope": "workspace"
         },
         "smartProofreader.enabledFileTypes.plaintext": {

@@ -2,6 +2,58 @@
 
 All notable changes to the "Smart Proofreader" extension will be documented in this file.
 
+## [0.0.7] - 2025-07-11
+
+### 🎉 Major User Experience Overhaul
+
+#### **New Installation Experience**
+- **Welcome Setup Prompt**: First-time users get a friendly setup prompt with "Set up now" or "Set up later" options
+- **Guided Configuration**: Clicking "Set up now" automatically opens the Rules Folder settings page
+- **No Auto-Creation**: Removed automatic file creation on install - users now have full control
+
+#### **Enhanced Settings Integration**
+- **In-Settings Button**: Added "Init Rules Folder" button directly in VS Code settings page
+- **Clear Path Display**: Default path shows `~/smart-proofreader/rules/` with Windows equivalents
+- **One-Click Setup**: Users can initialize their rules folder without using command palette
+
+#### **Streamlined Default Rules System**
+- **Three-Tier Architecture**: 
+  1. **Built-in Rules**: Extension's embedded PRH rules (always active)
+  2. **User Default Rules**: `~/smart-proofreader/rules/` (automatically checked)
+  3. **Custom Rules**: User-specified paths via settings
+- **Always-Active Defaults**: Default rules are checked regardless of user configuration
+- **No-Error Policy**: Missing user default folder won't cause errors
+
+#### **Simplified Sample Files**
+- **Three Clean Examples**: Creates `rule1.yml`, `rule2.yml`, `rule3.yml`
+- **Minimal Format**: Each file contains simple `expected/pattern/description` examples
+- **Ready-to-Edit**: Files include Japanese comment "# prh ルール例、自由に編集可能"
+
+### 🔧 Technical Improvements
+
+#### **Cross-Platform Enhancements**
+- **Windows Compatibility**: Fixed Open Folder behavior to show file contents instead of just folder
+- **Path Resolution**: Improved tilde (~) expansion and absolute path handling
+- **Platform-Specific UI**: Different path examples for Windows vs Mac/Linux users
+
+#### **Build Optimization** 
+- **Fixed Package Size**: Updated `.vscodeignore` to exclude `node_modules/**` and other unnecessary files
+- **Reduced Distribution**: Fixed warning about 7850+ files in extension package
+
+#### **New Commands**
+- **`Smart Proofreader: Init Rules Folder`**: Initialize user default rules folder with samples
+- **`Smart Proofreader: Open Rules Folder`**: Smart folder opening with multi-folder support
+
+### 🎯 Path Standardization
+- **Final Location**: `~/smart-proofreader/rules/` (not hidden, easily accessible)
+- **Windows Path**: `C:\Users\[username]\smart-proofreader\rules\`
+- **Cross-Platform**: Consistent behavior across all operating systems
+
+### 🚀 Developer Experience
+- **Enhanced File Watching**: Better monitoring of multiple rules folders
+- **Improved Error Handling**: Graceful handling of missing folders and files
+- **Better Debugging**: Enhanced logging for rule loading and path resolution
+
 ## [0.0.5] - 2025-07-11
 
 ### Fixed

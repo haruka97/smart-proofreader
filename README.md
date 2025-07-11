@@ -54,13 +54,39 @@ VSCodeの設定（`Ctrl+,`）で"Smart Proofreader"を検索：
 | Vue | .vue | vue |
 | JSON | .json | json |
 
-### カスタムルール
+### ルール管理システム
 
-デフォルトルールに加えて、独自のPRHルールフォルダを設定可能：
+Smart Proofreaderは3層のルールシステムを採用：
 
-1. 設定で`smartProofreader.rulesFolder`にフォルダパスを指定
-2. フォルダ内に`.yml`または`.yaml`ファイルを配置
-3. PRH形式でルールを記述
+#### 1. **内蔵ルール** (常に有効)
+- 拡張機能に組み込まれたデフォルトPRHルール
+- アップデート時に自動更新
+
+#### 2. **ユーザーデフォルトルール** (自動検出)
+- **場所**: `~/smart-proofreader/rules/` (Mac/Linux) / `C:\Users\[ユーザー名]\smart-proofreader\rules\` (Windows)
+- **初期化**: 設定ページの"Init Rules Folder"ボタンで作成
+- **自動生成**: `rule1.yml`, `rule2.yml`, `rule3.yml`のサンプルファイル
+- 設定不要で自動的に読み込まれます
+
+#### 3. **カスタムルール** (任意設定)
+- `smartProofreader.rulesFolder`で指定するカスタムパス
+- 複数プロジェクト間での共有ルール用
+
+#### ルール初期化手順
+
+1. **初回インストール**: "今すぐ設定"を選択して設定画面へ
+2. **設定画面**: Rules Folderの下にある"Init Rules Folder"ボタンをクリック
+3. **自動作成**: サンプルルールファイルが自動生成されます
+4. **編集開始**: 生成されたファイルを自由に編集
+
+#### サンプルルール形式
+```yaml
+# prh ルール例、自由に編集可能
+rules:
+  - expected: GitHub
+    pattern: /Github/
+    description: GitHubの正しい表記
+```
 
 ### システム要件
 
@@ -123,13 +149,39 @@ Open VS Code settings (`Ctrl+,`) and search "Smart Proofreader":
 | Vue | .vue | vue |
 | JSON | .json | json |
 
-### Custom Rules
+### Rule Management System
 
-Add custom PRH rules in addition to default rules:
+Smart Proofreader uses a three-tier rule system:
 
-1. Set `smartProofreader.rulesFolder` to your folder path in settings
-2. Place `.yml` or `.yaml` files in the folder
-3. Write rules in PRH format
+#### 1. **Built-in Rules** (Always Active)
+- Default PRH rules embedded in the extension
+- Automatically updated with extension updates
+
+#### 2. **User Default Rules** (Auto-detected)
+- **Location**: `~/smart-proofreader/rules/` (Mac/Linux) / `C:\Users\[username]\smart-proofreader\rules\` (Windows)
+- **Initialization**: Click "Init Rules Folder" button in settings page
+- **Auto-generated**: Sample files `rule1.yml`, `rule2.yml`, `rule3.yml`
+- Automatically loaded without configuration
+
+#### 3. **Custom Rules** (Optional Setting)
+- Custom path specified via `smartProofreader.rulesFolder`
+- For shared rules across multiple projects
+
+#### Rule Initialization Steps
+
+1. **First Install**: Choose "Set up now" to go to settings page
+2. **Settings Page**: Click "Init Rules Folder" button under Rules Folder
+3. **Auto-creation**: Sample rule files are automatically generated
+4. **Start Editing**: Freely edit the generated files
+
+#### Sample Rule Format
+```yaml
+# prh ルール例、自由に編集可能
+rules:
+  - expected: GitHub
+    pattern: /Github/
+    description: GitHubの正しい表記
+```
 
 ### System Requirements
 
@@ -153,6 +205,96 @@ Add custom PRH rules in addition to default rules:
 ### 🎯 **PRHルール例 / PRH Rule Examples**
 - **[技術文書用ルール](https://github.com/prh/rules)** - 一般的な技術文書校正ルール / General technical writing rules
 - **[日本語表記ルール](https://github.com/textlint-ja)** - 日本語文書用ルール集 / Japanese writing rules collection
+
+---
+
+## 中文说明
+
+### 概述
+
+Smart Proofreader 是一个基于 [PRH (Proofreading Helper)](https://github.com/prh/prh) 规则的智能文本校对 VS Code 扩展。它基于 [textlint](https://textlint.github.io/) 引擎，支持多种文件格式，并提供清晰的规则来源追踪，实现高效透明的文档校对。
+
+### 功能特点
+
+- **📝 多格式支持**: 校对 txt、md、html、tex、js、ts、vue、json 文件
+- **🎯 规则来源追踪**: 显示每个校对建议的来源文件名
+- **🔧 灵活配置**: 独立的文件类型设置和可切换的保存时自动检查
+- **📁 多规则文件夹**: 同时使用默认规则和自定义规则
+- **⚙️ 手动/自动模式**: 在保存时自动检查或手动检查之间选择
+- **🧹 诊断管理**: 一键清除所有诊断信息
+
+### 安装方法
+
+1. 打开 VS Code 扩展标签页
+2. 搜索 "Smart Proofreader"
+3. 点击安装
+
+### 使用方法
+
+#### 基本操作
+
+1. **手动检查**: `Ctrl+Shift+P` → "Smart Proofreader: Check This File"
+2. **清除诊断**: `Ctrl+Shift+P` → "Smart Proofreader: Clear All Diagnostics"
+
+#### 设置配置
+
+打开 VS Code 设置（`Ctrl+,`）并搜索 "Smart Proofreader"：
+
+- **文件类型设置**: 选择要检查的文件格式
+- **保存时检查**: 启用/禁用保存时自动检查
+- **自定义规则文件夹**: 指定自定义 PRH 规则文件夹的路径
+
+### 规则管理系统
+
+Smart Proofreader 使用三层规则系统：
+
+#### 1. **内置规则**（始终激活）
+- 扩展中嵌入的默认 PRH 规则
+- 随扩展更新自动更新
+
+#### 2. **用户默认规则**（自动检测）
+- **位置**: `~/smart-proofreader/rules/` (Mac/Linux) / `C:\Users\[用户名]\smart-proofreader\rules\` (Windows)
+- **初始化**: 在设置页面点击 "Init Rules Folder" 按钮
+- **自动生成**: 示例文件 `rule1.yml`、`rule2.yml`、`rule3.yml`
+- 无需配置即可自动加载
+
+#### 3. **自定义规则**（可选设置）
+- 通过 `smartProofreader.rulesFolder` 指定的自定义路径
+- 用于多项目间的共享规则
+
+#### 规则初始化步骤
+
+1. **首次安装**: 选择"现在设置"进入设置页面
+2. **设置页面**: 点击 Rules Folder 下方的 "Init Rules Folder" 按钮
+3. **自动创建**: 自动生成示例规则文件
+4. **开始编辑**: 自由编辑生成的文件
+
+#### 示例规则格式
+```yaml
+# prh 规则示例，可自由编辑
+rules:
+  - expected: GitHub
+    pattern: /Github/
+    description: GitHub的正确表记
+```
+
+### 支持的文件类型
+
+| 文件类型 | 扩展名 | 设置名称 |
+|---------|--------|----------|
+| 纯文本 | .txt | plaintext |
+| Markdown | .md, .markdown | markdown |
+| HTML | .html, .htm | html |
+| LaTeX | .tex | latex |
+| JavaScript | .js, .jsx | javascript |
+| TypeScript | .ts, .tsx | typescript |
+| Vue | .vue | vue |
+| JSON | .json | json |
+
+### 系统要求
+
+- Visual Studio Code 1.101.0 或更高版本
+- Node.js（用于 textlint 引擎）
 
 ---
 
