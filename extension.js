@@ -4,9 +4,32 @@ const vscode = require("vscode");
 const { TextLintEngine } = require("textlint");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const yaml = require("js-yaml");
 let prhDescMap;
 let statusBarItem;
+
+// Cross-platform path resolver
+function resolvePath(inputPath) {
+  if (!inputPath || !inputPath.trim()) {
+    return inputPath;
+  }
+  
+  let resolvedPath = inputPath.trim();
+  
+  // Handle tilde (~) expansion on Unix-like systems (Mac/Linux)
+  if (resolvedPath.startsWith('~')) {
+    const homeDir = os.homedir();
+    resolvedPath = resolvedPath.replace(/^~(?=\/|\\|$)/, homeDir);
+    console.log(`[DEBUG] Expanded tilde path: ${inputPath} -> ${resolvedPath}`);
+  }
+  
+  // Use path.resolve for absolute path resolution
+  const finalPath = path.resolve(resolvedPath);
+  console.log(`[DEBUG] Final resolved path: ${inputPath} -> ${finalPath}`);
+  
+  return finalPath;
+}
 
 // Status bar functions
 function updateStatusBar() {
@@ -85,7 +108,7 @@ function getAllRulesFolders() {
 
   // If user configured a rules folder, also check it
   if (userRulesFolder && userRulesFolder.trim()) {
-    const resolvedPath = path.resolve(userRulesFolder.trim());
+    const resolvedPath = resolvePath(userRulesFolder.trim());
     // Avoid adding duplicate paths
     if (resolvedPath !== defaultPath) {
       folders.push(resolvedPath);
@@ -280,6 +303,11 @@ function activate(context) {
         return;
       }
 
+      // Reload rules before manual check to ensure latest rules are used
+      console.log("[DEBUG] Manual check: Reloading PRH rules...");
+      prhDescMap = loadPrhDescriptionMap();
+      setupRulesFolderWatcher(); // Also refresh file watchers
+
       // Execute manual check
       await lintDocument(editor.document);
       
@@ -315,6 +343,11 @@ function activate(context) {
         
         if (newSetting) {
           vscode.window.showInformationMessage("Smart Proofreader: Auto check enabled");
+          // Reload rules before checking to ensure latest rules are used
+          console.log("[DEBUG] Status bar toggle: Reloading PRH rules...");
+          prhDescMap = loadPrhDescriptionMap();
+          setupRulesFolderWatcher(); // Also refresh file watchers
+          
           // Check current document if enabled
           if (vscode.window.activeTextEditor) {
             lintDocument(vscode.window.activeTextEditor.document);
@@ -352,6 +385,12 @@ function activate(context) {
     const { TextLintEngine } = require("textlint");
     const path = require("path");
 
+    // Always refresh rules and file paths before linting to ensure latest files are used
+    console.log("[DEBUG] lintDocument: Refreshing PRH rules and file paths...");
+    
+    // Force reload of rule description map to get latest file references
+    prhDescMap = loadPrhDescriptionMap();
+    
     // Dynamically set PRH rules paths - all rules folders
     const rulesFolders = getAllRulesFolders();
     const ymlFiles = [];
@@ -367,15 +406,41 @@ function activate(context) {
       }
     });
 
-    console.log(`[DEBUG] lintDocument PRH files for (${document.languageId}):`, ymlFiles);
+    // Validate all rule files exist before proceeding
+    const validYmlFiles = ymlFiles.filter(filePath => {
+      const exists = fs.existsSync(filePath);
+      if (!exists) {
+        console.warn(`[DEBUG] Skipping non-existent rule file: ${filePath}`);
+      }
+      return exists;
+    });
 
-    // Dynamically generate configuration file
-    const tempConfigPath = path.join(__dirname, 'temp-textlint-config-lint.js');
+    console.log(`[DEBUG] lintDocument PRH files for (${document.languageId}):`, validYmlFiles);
+    console.log(`[DEBUG] Filtered out ${ymlFiles.length - validYmlFiles.length} non-existent files`);
+
+    // If no valid files found, use default rules as fallback
+    let finalRulePaths = validYmlFiles;
+    if (validYmlFiles.length === 0) {
+      const defaultRulePath = path.resolve(__dirname, './prh-rules/prh.yml');
+      if (fs.existsSync(defaultRulePath)) {
+        finalRulePaths = [defaultRulePath];
+        console.log("[DEBUG] No valid custom rules found, using default rules");
+      } else {
+        console.warn("[DEBUG] No valid PRH rule files found (including defaults), skipping lint process");
+        return;
+      }
+    }
+
+    // Dynamically generate configuration file with unique name to avoid caching
+    const timestamp = Date.now();
+    const tempConfigPath = path.join(__dirname, `temp-textlint-config-lint-${timestamp}.js`);
+    console.log(`[DEBUG] Using temporary config file: ${tempConfigPath}`);
+    console.log(`[DEBUG] Final rule paths to use:`, JSON.stringify(finalRulePaths, null, 2));
     const configContent = `
 module.exports = {
   rules: {
     prh: {
-      rulePaths: ${JSON.stringify(ymlFiles.length > 0 ? ymlFiles : [path.resolve(__dirname, './prh-rules/prh.yml')])},
+      rulePaths: ${JSON.stringify(finalRulePaths)},
     },
   },
 };`;

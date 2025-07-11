@@ -2,7 +2,7 @@
   "name": "smart-proofreader",
   "displayName": "Smart Proofreader",
   "description": "Intelligent text proofreading with source-tracked PRH rules for multiple file formats",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "publisher": "dawei",
   "license": "MIT",
   "repository": {

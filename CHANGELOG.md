@@ -2,6 +2,44 @@
 
 All notable changes to the "Smart Proofreader" extension will be documented in this file.
 
+## [0.0.4] - 2025-07-11
+
+### Fixed
+- **Cross-platform Path Support**: Fixed custom rules folder path resolution on macOS and Linux
+  - Added automatic tilde (`~`) expansion for Unix-like systems  
+  - Implemented cross-platform path resolver for better compatibility
+  - Enhanced path debugging information for troubleshooting
+
+### Enhanced
+- **Better Platform Compatibility**: Improved support for different operating systems
+- **Path Resolution Logging**: Added detailed path resolution debugging
+
+### Technical Improvements
+- Added `os` module for proper home directory resolution
+- Implemented `resolvePath()` function for cross-platform path handling
+- Enhanced path validation and error reporting
+
+## [0.0.3] - 2025-07-11
+
+### Fixed
+- **Critical Rule File Loading Fix**: Fixed ENOENT errors when rule files are renamed or deleted
+  - Added real-time file validation before passing paths to textlint engine
+  - Implemented smart fallback to default rules when custom rules are unavailable
+  - Added unique temporary configuration file names to prevent caching issues
+  - Enhanced file existence checking and error handling
+
+### Enhanced
+- **Improved Manual Check Command**: Now reloads rules automatically when executed
+- **Enhanced Status Bar Toggle**: Refreshes rules when enabling auto-check
+- **Better Debug Information**: Added comprehensive logging for rule file processing
+- **Robust Error Handling**: Better handling of missing or invalid rule files
+
+### Technical Improvements
+- Real-time rule file validation in `lintDocument` function
+- Dynamic rule path filtering to exclude non-existent files
+- Automatic fallback mechanism to default rules
+- Enhanced debugging output for troubleshooting
+
 ## [0.0.2] - 2025-07-11
 
 ### Fixed
