@@ -13,8 +13,15 @@
   "bugs": {
     "url": "https://github.com/haruka97/smart-proofreader/issues"
   },
-  "icon": "Smart Proofreader.png",
-  "keywords": ["textlint", "prh", "proofreading", "text-checker", "grammar", "writing"],
+  "icon": "Smart-Proofreader.png",
+  "keywords": [
+    "textlint",
+    "prh",
+    "proofreading",
+    "text-checker",
+    "grammar",
+    "writing"
+  ],
   "engines": {
     "vscode": "^1.101.0"
   },
