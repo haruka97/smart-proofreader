@@ -1,65 +1,147 @@
-# test README
+# Smart Proofreader
 
-This is the README for your extension "test". After writing up a brief description, we recommend including the following sections.
+## 日本語
 
-## Features
+### 概要
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Smart Proofreaderは、PRHルールを使用したインテリジェントなテキスト校正VSCode拡張機能です。複数のファイル形式に対応し、ルールの出典を明確に表示することで、効率的で透明性の高い文書校正を実現します。
 
-For example if there is an image subfolder under your extension project workspace:
+### 特徴
 
-\!\[feature X\]\(images/feature-x.png\)
+- **📝 マルチファイル対応**: txt、md、html、tex、js、ts、vue、jsonファイルの校正
+- **🎯 ルール出典表示**: 各校正提案の出典ファイル名を表示
+- **🔧 柔軟な設定**: ファイルタイプごとの個別設定と保存時自動チェックの切り替え
+- **📁 複数ルールフォルダ**: デフォルトルールとカスタムルールの同時使用
+- **⚙️ 手動・自動モード**: 保存時自動チェックまたは手動チェックから選択可能
+- **🧹 診断情報管理**: ワンクリックで全ての診断情報をクリア
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### インストール
 
-## Requirements
+1. VSCodeのExtensions（拡張機能）タブを開く
+2. "Smart Proofreader"を検索
+3. インストールをクリック
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+### 使用方法
 
-## Extension Settings
+#### 基本操作
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+1. **手動チェック**: `Ctrl+Shift+P` → "Smart Proofreader: Check This File"
+2. **診断クリア**: `Ctrl+Shift+P` → "Smart Proofreader: Clear All Diagnostics"
 
-For example:
+#### 設定
 
-This extension contributes the following settings:
+VSCodeの設定（`Ctrl+,`）で"Smart Proofreader"を検索：
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- **ファイルタイプ設定**: チェックしたいファイル形式を選択
+- **保存時自動チェック**: 有効/無効を切り替え
+- **カスタムルールフォルダ**: 独自のPRHルールフォルダのパスを指定
 
-## Known Issues
+#### 診断情報の表示形式
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- **単一ルール**: `原文 => 修正案 [ソース] (説明 [ソース])`
+- **複数ルール**: `原文 => 修正案1 [ソース1], 修正案2 [ソース2] (説明1 [ソース1], 説明2 [ソース2])`
 
-## Release Notes
+### 対応ファイル形式
 
-Users appreciate release notes as you update your extension.
+| ファイル形式 | 拡張子 | 設定名 |
+|-------------|--------|--------|
+| プレーンテキスト | .txt | plaintext |
+| Markdown | .md, .markdown | markdown |
+| HTML | .html, .htm | html |
+| LaTeX | .tex | latex |
+| JavaScript | .js, .jsx | javascript |
+| TypeScript | .ts, .tsx | typescript |
+| Vue | .vue | vue |
+| JSON | .json | json |
 
-### 1.0.0
+### カスタムルール
 
-Initial release of ...
+デフォルトルールに加えて、独自のPRHルールフォルダを設定可能：
 
-### 1.0.1
+1. 設定で`smartProofreader.rulesFolder`にフォルダパスを指定
+2. フォルダ内に`.yml`または`.yaml`ファイルを配置
+3. PRH形式でルールを記述
 
-Fixed issue #.
+### システム要件
 
-### 1.1.0
-
-Added features X, Y, and Z.
+- Visual Studio Code 1.101.0以上
+- Node.js（textlintエンジン用）
 
 ---
 
-## Working with Markdown
+## English
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+### Overview
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
+Smart Proofreader is an intelligent text proofreading VS Code extension using PRH rules. It supports multiple file formats and provides transparent proofreading with clear rule source tracking.
 
-## For more information
+### Features
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+- **📝 Multi-format Support**: Proofread txt, md, html, tex, js, ts, vue, json files
+- **🎯 Rule Source Tracking**: Display source file names for each proofreading suggestion
+- **🔧 Flexible Configuration**: Individual file type settings and toggleable auto-check on save
+- **📁 Multiple Rule Folders**: Use default rules and custom rules simultaneously
+- **⚙️ Manual/Auto Modes**: Choose between auto-check on save or manual checking
+- **🧹 Diagnostic Management**: Clear all diagnostic information with one click
 
-**Enjoy!**
+### Installation
+
+1. Open VS Code Extensions tab
+2. Search for "Smart Proofreader"
+3. Click Install
+
+### Usage
+
+#### Basic Operations
+
+1. **Manual Check**: `Ctrl+Shift+P` → "Smart Proofreader: Check This File"
+2. **Clear Diagnostics**: `Ctrl+Shift+P` → "Smart Proofreader: Clear All Diagnostics"
+
+#### Settings
+
+Open VS Code settings (`Ctrl+,`) and search "Smart Proofreader":
+
+- **File Type Settings**: Select which file formats to check
+- **Check On Save**: Enable/disable automatic checking on save
+- **Custom Rules Folder**: Specify path to your custom PRH rules folder
+
+#### Diagnostic Display Format
+
+- **Single Rule**: `original => suggestion [source] (description [source])`
+- **Multiple Rules**: `original => suggestion1 [source1], suggestion2 [source2] (description1 [source1], description2 [source2])`
+
+### Supported File Types
+
+| File Type | Extensions | Setting Name |
+|-----------|------------|--------------|
+| Plain Text | .txt | plaintext |
+| Markdown | .md, .markdown | markdown |
+| HTML | .html, .htm | html |
+| LaTeX | .tex | latex |
+| JavaScript | .js, .jsx | javascript |
+| TypeScript | .ts, .tsx | typescript |
+| Vue | .vue | vue |
+| JSON | .json | json |
+
+### Custom Rules
+
+Add custom PRH rules in addition to default rules:
+
+1. Set `smartProofreader.rulesFolder` to your folder path in settings
+2. Place `.yml` or `.yaml` files in the folder
+3. Write rules in PRH format
+
+### System Requirements
+
+- Visual Studio Code 1.101.0 or higher
+- Node.js (for textlint engine)
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+## License
+
+This project is licensed under the MIT License.

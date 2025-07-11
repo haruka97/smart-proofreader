@@ -1,0 +1,18 @@
+# 编程相关规则文件
+version: 1
+rules:
+  - expected: JavaScript
+    pattern: /javascript|Javascript|java script|Java Script/i
+    description: 编程语言的正式名称，应使用驼峰式大小写 JavaScript
+
+  - expected: GitHub
+    pattern: /github|Github|git hub|Git Hub/i
+    description: 代码托管平台的正式名称，应为 GitHub
+
+  - expected: Node.js
+    pattern: /nodejs|node js|Node JS|NodeJS/i
+    description: JavaScript 运行时环境，正确写法为 Node.js（带点号）
+
+  - expected: TypeScript
+    pattern: /typescript|Typescript|type script|Type Script/i
+    description: Microsoft 开发的编程语言，正确写法为 TypeScript

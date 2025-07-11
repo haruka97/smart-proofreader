@@ -1,0 +1,10 @@
+# 基础规则文件
+version: 1
+rules:
+  - expected: VS Code
+    pattern: /VScode|VSCode|vscode/
+    description: Microsoft Visual Studio Code 的正式名称，请使用正确的大小写格式
+
+  - expected: AWS
+    pattern: /aws/i
+    description: Amazon Web Services 的正式略称，应全部大写

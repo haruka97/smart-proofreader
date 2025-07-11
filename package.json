@@ -1,8 +1,12 @@
 {
-  "name": "test",
-  "displayName": "test",
-  "description": "A VS Code extension to check .txt files using textlint and prh rules.",
+  "name": "smart-proofreader",
+  "displayName": "Smart Proofreader",
+  "description": "Intelligent text proofreading with source-tracked PRH rules for multiple file formats",
   "version": "0.0.1",
+  "publisher": "dawei",
+  "license": "MIT",
+  "icon": "Smart Proofreader.png",
+  "keywords": ["textlint", "prh", "proofreading", "text-checker", "grammar", "writing"],
   "engines": {
     "vscode": "^1.101.0"
   },
@@ -10,20 +14,99 @@
     "Linters"
   ],
   "activationEvents": [
-    "onCommand:test.helloWorld",
-    "onCommand:test.textlintCheckTxt",
-    "onLanguage:plaintext"
+    "onCommand:smartProofreader.checkFile",
+    "onCommand:smartProofreader.clear",
+    "onCommand:smartProofreader.toggle",
+    "onLanguage:plaintext",
+    "onLanguage:markdown",
+    "onLanguage:html",
+    "onLanguage:latex",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:vue",
+    "onLanguage:json"
   ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "test.helloWorld",
-      "title": "Hello World"
-    },
-    {
-      "command": "test.textlintCheckTxt",
-      "title": "Textlint: 检查当前TXT文件"
-    }]
+    "commands": [
+      {
+        "command": "smartProofreader.checkFile",
+        "title": "Smart Proofreader: Check This File"
+      },
+      {
+        "command": "smartProofreader.clear",
+        "title": "Smart Proofreader: Clear All Diagnostics"
+      },
+      {
+        "command": "smartProofreader.toggle",
+        "title": "Smart Proofreader: Toggle Auto Check"
+      }
+    ],
+    "configuration": {
+      "title": "Smart Proofreader",
+      "properties": {
+        "smartProofreader.rulesFolder": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to custom PRH rules folder. Leave empty to use default rules.",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.plaintext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .txt files",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.markdown": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .md and .markdown files",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.html": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .html files",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.latex": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .tex files",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.javascript": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .js and .jsx files",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.typescript": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .ts and .tsx files",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.vue": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .vue files",
+          "scope": "workspace"
+        },
+        "smartProofreader.enabledFileTypes.json": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable checking for .json files",
+          "scope": "workspace"
+        },
+        "smartProofreader.checkOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check files when saving",
+          "scope": "workspace"
+        }
+      }
+    }
   },
   "scripts": {
     "lint": "eslint .",
