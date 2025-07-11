@@ -4,7 +4,7 @@
 
 ### 概要
 
-Smart Proofreaderは、PRHルールを使用したインテリジェントなテキスト校正VSCode拡張機能です。複数のファイル形式に対応し、ルールの出典を明確に表示することで、効率的で透明性の高い文書校正を実現します。
+Smart Proofreaderは、[PRH (Proofreading Helper)](https://github.com/prh/prh) ルールを使用したインテリジェントなテキスト校正VSCode拡張機能です。[textlint](https://textlint.github.io/) エンジンをベースに、複数のファイル形式に対応し、ルールの出典を明確に表示することで、効率的で透明性の高い文書校正を実現します。
 
 ### 特徴
 
@@ -73,7 +73,7 @@ VSCodeの設定（`Ctrl+,`）で"Smart Proofreader"を検索：
 
 ### Overview
 
-Smart Proofreader is an intelligent text proofreading VS Code extension using PRH rules. It supports multiple file formats and provides transparent proofreading with clear rule source tracking.
+Smart Proofreader is an intelligent text proofreading VS Code extension using [PRH (Proofreading Helper)](https://github.com/prh/prh) rules. Based on the [textlint](https://textlint.github.io/) engine, it supports multiple file formats and provides transparent proofreading with clear rule source tracking.
 
 ### Features
 
@@ -135,6 +135,24 @@ Add custom PRH rules in addition to default rules:
 
 - Visual Studio Code 1.101.0 or higher
 - Node.js (for textlint engine)
+
+---
+
+## 相关资源 / Related Resources
+
+### 🔧 **コアツール / Core Tools**
+- **[PRH (Proofreading Helper)](https://github.com/prh/prh)** - 校正ルールエンジン / Proofreading rule engine
+- **[textlint](https://textlint.github.io/)** - テキスト校正フレームワーク / Text linting framework
+- **[textlint-rule-prh](https://github.com/textlint-rule/textlint-rule-prh)** - PRH用textlintルール / textlint rule for PRH
+
+### 📚 **ドキュメント / Documentation**
+- **[PRH ルール記法](https://github.com/prh/prh#rule-syntax)** - PRHルールの書き方 / How to write PRH rules
+- **[textlint 使用方法](https://textlint.github.io/docs/getting-started.html)** - textlintの基本的な使い方 / Basic textlint usage
+- **[VSCode拡張開発](https://code.visualstudio.com/api)** - VS Code Extension API
+
+### 🎯 **PRHルール例 / PRH Rule Examples**
+- **[技術文書用ルール](https://github.com/prh/rules)** - 一般的な技術文書校正ルール / General technical writing rules
+- **[日本語表記ルール](https://github.com/textlint-ja)** - 日本語文書用ルール集 / Japanese writing rules collection
 
 ---
 
