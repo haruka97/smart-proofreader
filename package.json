@@ -2,7 +2,7 @@
   "name": "smart-proofreader",
   "displayName": "Smart Proofreader",
   "description": "Intelligent text proofreading with source-tracked PRH rules for multiple file formats",
-  "version": "0.0.7",
+  "version": "0.1.5",
   "publisher": "dawei",
   "license": "MIT",
   "repository": {
@@ -29,17 +29,7 @@
     "Linters"
   ],
   "activationEvents": [
-    "onCommand:smartProofreader.checkFile",
-    "onCommand:smartProofreader.clear",
-    "onCommand:smartProofreader.toggle",
-    "onLanguage:plaintext",
-    "onLanguage:markdown",
-    "onLanguage:html",
-    "onLanguage:latex",
-    "onLanguage:javascript",
-    "onLanguage:typescript",
-    "onLanguage:vue",
-    "onLanguage:json"
+    "onStartupFinished"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -146,8 +136,10 @@
     "@vscode/test-electron": "^2.5.2"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0",
-    "textlint": "^13.3.0",
-    "textlint-rule-prh": "^6.0.0"
+    "js-yaml": "4.1.0",
+    "textlint": "13.3.0",
+    "textlint-rule-prh": "6.0.0",
+    "@textlint/kernel": "13.3.0",
+    "@textlint/textlint-plugin-text": "13.3.0"
   }
 }

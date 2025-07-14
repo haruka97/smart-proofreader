@@ -1,7 +1,6 @@
 .vscode/**
 .vscode-test/**
 test/**
-node_modules/**
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
@@ -19,3 +18,9 @@ package-lock.json
 Thumbs.db
 *.zip
 *.tar.gz
+
+# Exclude only devDependencies, keep runtime dependencies
+node_modules/@types/**
+node_modules/eslint/**
+node_modules/@vscode/test-cli/**
+node_modules/@vscode/test-electron/**

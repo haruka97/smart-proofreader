@@ -8,6 +8,7 @@ const os = require("os");
 const yaml = require("js-yaml");
 let prhDescMap;
 let statusBarItem;
+let extensionContext = null;
 
 // Cross-platform path resolver
 function resolvePath(inputPath) {
@@ -40,10 +41,10 @@ function getUserDefaultRulesFolder() {
 
 // Get display path for current platform
 function getDefaultRulesDisplayPath() {
-  if (process.platform === 'win32') {
-    return 'C:\\Users\\[username]\\smart-proofreader\\rules\\';
+  if (process.platform === "win32") {
+    return "C:\\Users\\[username]\\smart-proofreader\\rules\\";
   } else {
-    return '~/smart-proofreader/rules/';
+    return "~/smart-proofreader/rules/";
   }
 }
 
@@ -174,15 +175,18 @@ function shouldCheckDocument(document) {
   return extensions.some((ext) => fileName.endsWith(ext));
 }
 
-function getAllRulesFolders() {
+function getAllRulesFolders(context) {
   const config = vscode.workspace.getConfiguration("smartProofreader");
   const userRulesFolder = config.get("rulesFolder");
   const folders = [];
 
-  // Default rules folder is always checked
-  const defaultPath = path.resolve(__dirname, "./prh-rules");
+  // Default rules folder is always checked - use context.extensionPath for packaged extension
+  const extensionPath = context ? context.extensionPath : __dirname;
+  const defaultPath = path.join(extensionPath, "prh-rules");
   folders.push(defaultPath);
   console.log(`[DEBUG] Default rules folder: ${defaultPath}`);
+  console.log(`[DEBUG] Extension path: ${extensionPath}`);
+  console.log(`[DEBUG] Default path exists: ${fs.existsSync(defaultPath)}`);
 
   // User default rules folder is always checked
   const userDefaultPath = getUserDefaultRulesFolder();
@@ -207,11 +211,11 @@ function getAllRulesFolders() {
 
 function getRulesFolder() {
   // Maintain backward compatibility, return first folder (default folder)
-  return getAllRulesFolders()[0];
+  return getAllRulesFolders(extensionContext)[0];
 }
 
 function loadPrhDescriptionMap() {
-  const rulesFolders = getAllRulesFolders();
+  const rulesFolders = getAllRulesFolders(extensionContext);
   const map = {};
   let totalFiles = 0;
   let totalRules = 0;
@@ -238,7 +242,8 @@ function loadPrhDescriptionMap() {
       files.forEach((filename) => {
         const filePath = path.join(rulesFolder, filename);
         // Check if it's the default rules folder
-        const defaultPath = path.resolve(__dirname, "./prh-rules");
+        const extensionPath = extensionContext ? extensionContext.extensionPath : __dirname;
+        const defaultPath = path.join(extensionPath, "prh-rules");
         const isDefaultFolder = rulesFolder === defaultPath;
         const sourceLabel = isDefaultFolder ? "default" : filename;
 
@@ -351,6 +356,85 @@ function loadPrhDescriptionMap() {
 prhDescMap = loadPrhDescriptionMap();
 
 let folderWatchers = [];
+let cachedRulesConfig = null;
+let cachedRulesTimestamp = null;
+
+// Get modification timestamps of all rule files
+function getRulesTimestamp() {
+  const rulesFolders = getAllRulesFolders(extensionContext);
+  let latestTimestamp = 0;
+
+  rulesFolders.forEach((rulesFolder) => {
+    if (fs.existsSync(rulesFolder)) {
+      const files = fs
+        .readdirSync(rulesFolder)
+        .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
+      files.forEach((file) => {
+        const filePath = path.join(rulesFolder, file);
+        if (fs.existsSync(filePath)) {
+          const stat = fs.statSync(filePath);
+          latestTimestamp = Math.max(latestTimestamp, stat.mtime.getTime());
+        }
+      });
+    }
+  });
+
+  return latestTimestamp;
+}
+
+// Get cached textlint config or create new one if cache is invalid
+function getCachedTextlintConfig() {
+  const currentTimestamp = getRulesTimestamp();
+
+  if (cachedRulesConfig && cachedRulesTimestamp === currentTimestamp) {
+    console.log("[DEBUG] Using cached textlint config");
+    return cachedRulesConfig;
+  }
+
+  console.log("[DEBUG] Cache miss or outdated, generating new textlint config");
+
+  // Generate new config
+  const rulesFolders = getAllRulesFolders(extensionContext);
+  const ymlFiles = [];
+
+  rulesFolders.forEach((rulesFolder) => {
+    if (fs.existsSync(rulesFolder)) {
+      const files = fs
+        .readdirSync(rulesFolder)
+        .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
+      files.forEach((file) => {
+        ymlFiles.push(path.join(rulesFolder, file));
+      });
+    }
+  });
+
+  // Validate files exist
+  const validYmlFiles = ymlFiles.filter((filePath) => fs.existsSync(filePath));
+
+  let finalRulePaths = validYmlFiles;
+  if (validYmlFiles.length === 0) {
+    const extensionPath = extensionContext ? extensionContext.extensionPath : __dirname;
+    const defaultRulePath = path.join(extensionPath, "prh-rules", "prh.yml");
+    if (fs.existsSync(defaultRulePath)) {
+      finalRulePaths = [defaultRulePath];
+    }
+  }
+
+  const configContent = `
+module.exports = {
+  rules: {
+    prh: {
+      rulePaths: ${JSON.stringify(finalRulePaths)},
+    },
+  },
+};`;
+
+  // Cache the result
+  cachedRulesConfig = { configContent, rulePaths: finalRulePaths };
+  cachedRulesTimestamp = currentTimestamp;
+
+  return cachedRulesConfig;
+}
 
 function setupRulesFolderWatcher() {
   // Clean up old watchers
@@ -361,7 +445,7 @@ function setupRulesFolderWatcher() {
   });
   folderWatchers = [];
 
-  const rulesFolders = getAllRulesFolders();
+  const rulesFolders = getAllRulesFolders(extensionContext);
 
   rulesFolders.forEach((rulesFolder) => {
     if (fs.existsSync(rulesFolder)) {
@@ -374,6 +458,9 @@ function setupRulesFolderWatcher() {
             console.log(
               `PRH rules file changed: ${filename} in ${rulesFolder}`
             );
+            // Clear cache when files change
+            cachedRulesConfig = null;
+            cachedRulesTimestamp = null;
             prhDescMap = loadPrhDescriptionMap();
           }
         });
@@ -402,7 +489,9 @@ function activate(context) {
   // Extension activation message
   console.log("Smart Proofreader extension is now active!");
 
-  // Show setup prompt on first activation
+  // Store context globally for use in other functions
+  extensionContext = context;
+
   const isFirstTime = !context.globalState.get(
     "smartProofreader.hasShownSetup",
     false
@@ -530,7 +619,7 @@ function activate(context) {
     "smartProofreader.openRulesFolder",
     function () {
       const userDefaultPath = getUserDefaultRulesFolder();
-      const allFolders = getAllRulesFolders();
+      const allFolders = getAllRulesFolders(extensionContext);
 
       if (allFolders.length === 1) {
         // Only default extension rules folder exists
@@ -757,83 +846,33 @@ function activate(context) {
     const { TextLintEngine } = require("textlint");
     const path = require("path");
 
-    // Always refresh rules and file paths before linting to ensure latest files are used
-    console.log("[DEBUG] lintDocument: Refreshing PRH rules and file paths...");
+    // Use cached config instead of regenerating every time
+    const cachedConfig = getCachedTextlintConfig();
 
-    // Force reload of rule description map to get latest file references
-    prhDescMap = loadPrhDescriptionMap();
-
-    // Dynamically set PRH rules paths - all rules folders
-    const rulesFolders = getAllRulesFolders();
-    const ymlFiles = [];
-
-    rulesFolders.forEach((rulesFolder) => {
-      if (fs.existsSync(rulesFolder)) {
-        const files = fs
-          .readdirSync(rulesFolder)
-          .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
-        files.forEach((file) => {
-          ymlFiles.push(path.join(rulesFolder, file));
-        });
-      }
-    });
-
-    // Validate all rule files exist before proceeding
-    const validYmlFiles = ymlFiles.filter((filePath) => {
-      const exists = fs.existsSync(filePath);
-      if (!exists) {
-        console.warn(`[DEBUG] Skipping non-existent rule file: ${filePath}`);
-      }
-      return exists;
-    });
-
-    console.log(
-      `[DEBUG] lintDocument PRH files for (${document.languageId}):`,
-      validYmlFiles
-    );
-    console.log(
-      `[DEBUG] Filtered out ${
-        ymlFiles.length - validYmlFiles.length
-      } non-existent files`
-    );
-
-    // If no valid files found, use default rules as fallback
-    let finalRulePaths = validYmlFiles;
-    if (validYmlFiles.length === 0) {
-      const defaultRulePath = path.resolve(__dirname, "./prh-rules/prh.yml");
-      if (fs.existsSync(defaultRulePath)) {
-        finalRulePaths = [defaultRulePath];
-        console.log("[DEBUG] No valid custom rules found, using default rules");
-      } else {
-        console.warn(
-          "[DEBUG] No valid PRH rule files found (including defaults), skipping lint process"
-        );
-        return;
-      }
+    if (
+      !cachedConfig ||
+      !cachedConfig.rulePaths ||
+      cachedConfig.rulePaths.length === 0
+    ) {
+      console.warn(
+        "[DEBUG] No valid PRH rule files found, skipping lint process"
+      );
+      return;
     }
 
-    // Dynamically generate configuration file with unique name to avoid caching
+    console.log(
+      `[DEBUG] Using cached config with ${cachedConfig.rulePaths.length} rule files`
+    );
+
+    // Create temporary config file (still needed for TextLintEngine)
     const timestamp = Date.now();
     const tempConfigPath = path.join(
       __dirname,
       `temp-textlint-config-lint-${timestamp}.js`
     );
-    console.log(`[DEBUG] Using temporary config file: ${tempConfigPath}`);
-    console.log(
-      `[DEBUG] Final rule paths to use:`,
-      JSON.stringify(finalRulePaths, null, 2)
-    );
-    const configContent = `
-module.exports = {
-  rules: {
-    prh: {
-      rulePaths: ${JSON.stringify(finalRulePaths)},
-    },
-  },
-};`;
 
     try {
-      fs.writeFileSync(tempConfigPath, configContent);
+      fs.writeFileSync(tempConfigPath, cachedConfig.configContent);
 
       const engine = new TextLintEngine({
         configFile: tempConfigPath,
@@ -909,19 +948,47 @@ module.exports = {
               console.log(`[DEBUG] No rule info found for: "${originalText}"`);
             }
           }
+          // Calculate the range to highlight the complete matched text
+          let startPos = new vscode.Position(msg.line - 1, msg.column - 1);
+          let endPos;
+          let rangeLength = 1; // Default to 1 character
+
+          console.log(
+            `[DEBUG] Processing diagnostic message: "${msg.message}"`
+          );
+          console.log(`[DEBUG] msg.range:`, msg.range);
+          console.log(
+            `[DEBUG] msg.line: ${msg.line}, msg.column: ${msg.column}`
+          );
+
+          // Try to extract the original text from the message first (more reliable)
+          const messageMatch = /^(.*?) => (.*)$/.exec(msg.message);
+          if (messageMatch) {
+            const originalText = messageMatch[1];
+            rangeLength = originalText.length;
+            console.log(
+              `[DEBUG] Extracted original text: "${originalText}", length: ${rangeLength}`
+            );
+          } else if (msg.range && msg.range.length >= 2) {
+            // Use textlint's range information if message parsing fails
+            rangeLength = msg.range[1] - msg.range[0];
+            console.log(`[DEBUG] Using textlint range, length: ${rangeLength}`);
+          }
+
+          endPos = new vscode.Position(
+            msg.line - 1,
+            msg.column - 1 + rangeLength
+          );
+
+          console.log(
+            `[DEBUG] Final range: line ${msg.line - 1}, col ${
+              msg.column - 1
+            } to col ${msg.column - 1 + rangeLength}`
+          );
+
           diagnostics.push(
             new vscode.Diagnostic(
-              new vscode.Range(
-                new vscode.Position(msg.line - 1, msg.column - 1),
-                new vscode.Position(
-                  msg.line - 1,
-                  msg.column -
-                    1 +
-                    (msg.range && msg.range[1]
-                      ? msg.range[1] - msg.range[0]
-                      : 1)
-                )
-              ),
+              new vscode.Range(startPos, endPos),
               diagMsg,
               vscode.DiagnosticSeverity.Information
             )
@@ -959,6 +1026,7 @@ module.exports = {
     }
   });
   context.subscriptions.push(openDisposable);
+
 
   // Check active editor on startup (optional)
   if (vscode.window.activeTextEditor) {
