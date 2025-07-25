@@ -2,6 +2,357 @@
 
 All notable changes to the "Smart Proofreader" extension will be documented in this file.
 
+## [0.1.9] - 2025-07-25
+
+### 🚨 Critical Complex Regex Pattern Support
+
+#### **Fixed Complex Regular Expression Diagnostic Display**
+- **Issue**: Complex regex patterns with advanced features not displaying diagnostic information
+- **User Report**: Rules with negative lookahead, quantifiers, and complex patterns showed no rule source or description
+- **Root Cause**: Pattern parsing logic only handled simple string literals, failed on advanced regex syntax
+- **Impact**: Many sophisticated PRH rules were not providing complete user feedback
+
+#### **Specific Pattern Types Fixed**
+- **Negative Lookahead**: `(?<!prefix\s)` patterns now fully supported
+- **Non-capturing Groups**: `(?:...)` patterns correctly matched
+- **Quantifiers**: `{2,}`, `+`, `*` patterns now work with diagnostics
+- **Complex Alternatives**: Multi-level `|` patterns with nested groups
+- **Unicode Patterns**: Japanese character patterns with advanced regex features
+
+#### **Examples of Fixed Rules**
+```yaml
+# Complex pattern with negative lookahead - NOW WORKS
+- expected: Correct Term
+  pattern: /(?<!Prefix\s)(?:Term\s*(?:Variant1|Variant2)|Alternative\s*表記)/
+  description: 正しい表記を使用してください
+
+# Consecutive punctuation rules - NOW WORK
+- expected: "、"
+  pattern: /、{2,}/
+  description: 連続使用は避けてください
+
+- expected: "。"
+  pattern: /。{2,}/
+  description: 連続使用は避けてください
+```
+
+#### **Advanced Pattern Storage System**
+- **Dual Storage Strategy**: Store both simplified and complex pattern representations
+- **Pattern Key System**: Use `__PATTERN__` prefix for complex regex patterns
+- **Runtime Pattern Matching**: Test actual regex patterns against detected text
+- **Fallback Mechanisms**: Multiple matching strategies ensure maximum coverage
+
+#### **Technical Implementation**
+```javascript
+// New complex pattern storage
+const patternKey = `__PATTERN__${patternStr}`;
+map[patternKey].push({
+  description: rule.description,
+  source: sourceLabel,
+  expected: rule.expected,
+  originalPattern: patternStr
+});
+
+// Enhanced diagnostic matching
+if (key.startsWith('__PATTERN__')) {
+  const matches = patternStr.match(/^\/(.+?)\/([gimuy]*)$/);
+  const regexPattern = new RegExp(matches[1], matches[2]);
+  if (regexPattern.test(originalText)) {
+    ruleInfos = infos; // Match found
+  }
+}
+```
+
+### 🎯 User Experience Improvements
+
+#### **Comprehensive Pattern Support**
+- **Before**: Only simple literal patterns showed diagnostic information
+- **After**: All regex pattern types display complete rule details
+- **Coverage**: Supports negative assertions, quantifiers, groups, alternatives
+
+#### **Specific Issue Resolutions**
+- **Complex Pattern Terms**: Negative lookahead patterns ✅
+- **Consecutive Punctuation**: Quantifier patterns (`{2,}`) ✅
+- **Advanced Unicode**: Japanese text with complex regex features ✅
+- **Nested Patterns**: Multi-level grouping and alternatives ✅
+
+### 🔧 Technical Enhancements
+
+#### **Multi-Tier Matching Algorithm**
+1. **Direct Match**: Exact key lookup (fastest for simple cases)
+2. **Pattern Match**: Complex regex pattern evaluation
+3. **Substring Match**: Partial text matching
+4. **Reverse Match**: Contained text matching
+5. **Legacy Match**: Simple regex patterns
+
+#### **Performance Optimizations**
+- **Pattern Caching**: Compiled regex patterns cached for performance
+- **Early Termination**: Loop breaks on first successful match
+- **Error Resilience**: Regex compilation errors don't break matching
+- **Debug Logging**: Comprehensive matching trace for troubleshooting
+
+#### **Backward Compatibility**
+- **Zero Breaking Changes**: All existing simple patterns continue working
+- **Enhanced Coverage**: Only adds new matching capabilities
+- **Pattern Migration**: Automatic handling of both old and new pattern formats
+- **Performance Preservation**: Simple patterns maintain fast direct lookup
+
+### 📊 Pattern Coverage Statistics
+
+#### **Supported Regex Features**
+- ✅ **Literals**: `/word/`, `/text/`
+- ✅ **Alternatives**: `/opt1|opt2|opt3/`
+- ✅ **Quantifiers**: `/word{2,}/`, `/char+/`, `/item*/`
+- ✅ **Groups**: `/(group1|group2)/`, `/(?:non-capture)/`
+- ✅ **Assertions**: `/(?<!negative)/`, `/(?=positive)/`
+- ✅ **Character Classes**: `/[abc]/`, `/\w+/`, `/\s*/`
+- ✅ **Flags**: `/pattern/gi`, `/pattern/imu`
+- ✅ **Unicode**: `/[\u3000-\u3fff]/`, `/[ぁ-ん]/`
+
+This comprehensive regex support ensures that sophisticated PRH rules now provide complete diagnostic information, significantly improving the user experience for complex language checking scenarios.
+
+## [0.1.8] - 2025-07-25
+
+### 🚨 Critical Robustness Fix: Invalid Rule Handling
+
+#### **Fixed Complete System Failure on Invalid Rules**
+- **Issue**: Single invalid rule in any rule file would cause all proofreading to stop working
+- **User Report**: Rules with syntax like `pattern: ?` without proper regex format broke entire extension
+- **Root Cause**: No error handling for malformed rules - one bad rule killed all functionality
+- **Impact**: Users lost all proofreading capabilities when any rule file contained errors
+
+#### **Comprehensive Error Handling System**
+- **Rule-Level Protection**: Each individual rule wrapped in try-catch blocks
+- **Spec-Level Protection**: Individual rule specs handled separately with error isolation  
+- **Pattern Validation**: Pre-validation of regex patterns before processing
+- **Graceful Degradation**: Invalid rules are skipped while valid rules continue to work
+
+#### **Technical Implementation**
+```javascript
+// Multi-layer error handling
+rules.forEach((rule, index) => {
+  try {
+    // Rule processing with validation
+    if (patternStr.startsWith('/') && patternStr.endsWith('/')) {
+      const testPattern = patternStr.slice(1, -1);
+      new RegExp(testPattern); // Validate regex before use
+    }
+    // Process valid rule...
+  } catch (ruleError) {
+    console.warn(`[WARN] Skipping invalid rule ${index + 1}:`, ruleError.message);
+    // Continue with next rule instead of crashing
+  }
+});
+```
+
+#### **Enhanced Error Reporting**
+- **Detailed Warnings**: Specific rule index and filename for easy debugging
+- **Pattern Validation**: Clear messages for invalid regex patterns
+- **Spec-Level Reporting**: Individual spec errors within multi-spec rules
+- **Non-Breaking Logs**: Warnings logged without stopping execution
+
+### 🛡️ Robustness Improvements
+
+#### **Fault Isolation**
+- **Rule Independence**: Invalid rules don't affect valid rules in same file
+- **File Independence**: Invalid rules in one file don't affect other files
+- **Spec Independence**: Invalid specs don't affect other specs in same rule
+- **Alternative Independence**: Invalid alternatives don't affect other alternatives
+
+#### **Validation Layers**
+1. **File Level**: YAML parsing errors isolated per file
+2. **Rule Level**: Individual rule structure validation
+3. **Pattern Level**: Regex pattern syntax validation
+4. **Spec Level**: Individual spec validation within rules
+5. **Alternative Level**: Multi-alternative pattern validation
+
+#### **Error Categories Handled**
+- **Invalid Regex Patterns**: `pattern: ?`, `pattern: /[/`, etc.
+- **Missing Required Fields**: Rules without `pattern` or `expected`
+- **Malformed YAML**: Syntax errors in rule files
+- **Pattern Processing Errors**: Complex regex parsing failures
+- **Spec Structure Errors**: Invalid spec formats
+
+### 🎯 User Experience Enhancement
+
+#### **Continuous Operation**
+- **Before**: One bad rule = complete system failure
+- **After**: Invalid rules skipped, valid rules continue working normally
+- **Reliability**: Extension remains functional even with rule file errors
+- **Productivity**: Users can continue working while fixing rule issues
+
+#### **Better Debugging**
+- **Specific Error Messages**: Exact rule and file location for issues
+- **Non-Intrusive Warnings**: Errors logged to console without user interruption
+- **Easy Identification**: Clear rule indexing for quick problem location
+- **Helpful Context**: Full rule content included in error messages
+
+### 🔧 Technical Benefits
+
+#### **System Stability**
+- **No More Crashes**: Extension continues running despite rule errors
+- **Graceful Degradation**: Partial functionality better than complete failure
+- **Error Isolation**: Problems contained to specific rules/files
+- **Recovery Capability**: Fixed rules automatically work on next file change
+
+#### **Development Friendly**
+- **Rule Testing**: Can test experimental rules without breaking system
+- **Incremental Development**: Add rules progressively without risk
+- **Error Feedback**: Clear indication of what needs fixing
+- **Hot Reloading**: Fixed rules work immediately via file watching
+
+This fix transforms the extension from brittle (one error breaks everything) to robust (errors are isolated and handled gracefully), significantly improving reliability for users with complex rule sets.
+
+## [0.1.7] - 2025-07-25
+
+### 🚨 Critical Diagnostic Matching Fix
+
+#### **Fixed Missing Diagnostic Information Issue**
+- **Issue**: Some PRH rules were not displaying diagnostic information despite being detected by TextLint
+- **User Report**: Some specific rules were not showing source info, while others worked fine
+- **Root Cause**: Rigid exact-match logic failed when TextLint output didn't perfectly match rule mapping keys
+- **Impact**: Users missed important rule source information and descriptions for many valid detections
+
+#### **Enhanced Pattern Matching System**
+- **Multi-Layer Matching**: Implemented intelligent 3-tier matching algorithm
+- **Substring Matching**: Rules now match when key is contained in detected text
+- **Reverse Matching**: Handles cases where detected text is contained in rule key
+- **Regex Pattern Support**: Improved handling of complex regular expression patterns
+
+#### **Technical Implementation**
+```javascript
+// Enhanced matching logic
+if (!ruleInfos) {
+  for (const [key, infos] of Object.entries(prhDescMap)) {
+    // Method 1: Substring matching
+    if (originalText.includes(key)) {
+      ruleInfos = infos;
+      break;
+    }
+    
+    // Method 2: Reverse substring matching
+    if (key.includes(originalText)) {
+      ruleInfos = infos;
+      break;
+    }
+    
+    // Method 3: Enhanced regex pattern matching
+    if (key.includes("|") || key.includes("[") || ...) {
+      const regexPattern = new RegExp(key, "g");
+      if (regexPattern.test(originalText)) {
+        ruleInfos = infos;
+        break;
+      }
+    }
+  }
+}
+```
+
+#### **Debug Logging Enhanced**
+- **Substring Match Logs**: `"[DEBUG] Substring match found: \"key\" in \"originalText\""`
+- **Reverse Match Logs**: `"[DEBUG] Reverse substring match found: \"originalText\" in \"key\""`
+- **Pattern Match Logs**: `"[DEBUG] Regex pattern \"key\" matches \"originalText\""`
+- **Error Handling**: Graceful handling of regex pattern errors with detailed logging
+
+### 🎯 User Experience Improvements
+
+#### **Comprehensive Rule Coverage**
+- **Before**: Only exact matches showed diagnostic information
+- **After**: Partial matches, contained text, and complex patterns all display full diagnostic info
+- **Coverage**: Significantly increased number of rules showing complete source information
+
+#### **Specific Issue Resolutions**
+- **Japanese Terms**: Now displays diagnostic information with rule source ✅
+- **Partial Matches**: Now shows complete rule description and source ✅  
+- **English Terms**: Terms with spaces now handled correctly ✅
+- **Complex Patterns**: Multi-alternative patterns (e.g., `/option1|option2|option3/`) now work ✅
+
+### 🔧 Technical Details
+
+#### **Matching Algorithm Priority**
+1. **Direct Match**: Exact key match (fastest, maintains existing behavior)
+2. **Substring Match**: Key contained in detected text (handles partial matches)
+3. **Reverse Match**: Detected text contained in key (handles expanded forms)
+4. **Regex Match**: Complex pattern matching with error handling
+
+#### **Performance Optimization**
+- **Early Break**: Loop terminates immediately upon first successful match
+- **Error Resilience**: Regex errors don't crash the matching process
+- **Maintain Speed**: Direct matches still use fast hash lookup
+
+#### **Backward Compatibility**
+- **Zero Breaking Changes**: All existing exact matches continue to work
+- **Enhanced Coverage**: Only adds new matching capabilities
+- **Preserved Behavior**: CloudWatch Events and other working rules unchanged
+
+This fix resolves the diagnostic information gap that was causing users to miss important rule context for many valid PRH rule detections.
+
+## [0.1.6] - 2025-07-17
+
+### 🚨 Critical Cache Issue Fix
+
+#### **Fixed Configuration Change Cache Bug**
+- **Issue**: Rules folder path changes in marketplace version required VS Code restart to take effect
+- **Root Cause**: Cache was not being cleared when configuration changed, causing old textlint config to persist
+- **User Impact**: Debug mode worked correctly, but packaged extension needed restart for new rule paths
+- **Solution**: Added comprehensive cache clearing logic to all relevant operations
+
+#### **Enhanced Cache Invalidation System**
+- **Rule File Changes**: Cache cleared when rule files are modified (existing + enhanced logging)
+- **Rules Folder Path Changes**: Cache cleared when user changes rules folder setting (NEW)
+- **Manual Extension Disable**: Cache cleared when user toggles extension off (NEW)
+
+#### **Technical Implementation**
+```javascript
+// Added to configuration change listener
+if (e.affectsConfiguration("smartProofreader.rulesFolder")) {
+  cachedRulesConfig = null;        // Clear cached config
+  cachedRulesTimestamp = null;     // Clear timestamp cache
+  // ... existing logic
+  console.log("[DEBUG] Cache cleared due to rules folder path change");
+}
+
+// Added to toggle command (disable branch)
+} else {
+  diagnosticCollection.clear();
+  cachedRulesConfig = null;        // Clear cached config  
+  cachedRulesTimestamp = null;     // Clear timestamp cache
+  console.log("[DEBUG] Cache cleared due to manual disable");
+}
+```
+
+#### **Debug Logging Enhanced**
+- **File Change Logs**: `"[DEBUG] Cache cleared due to rule file change"`
+- **Path Change Logs**: `"[DEBUG] Cache cleared due to rules folder path change"`
+- **Manual Disable Logs**: `"[DEBUG] Cache cleared due to manual disable"`
+
+### 🎯 User Experience Improvements
+
+#### **Immediate Configuration Response**
+- **Before**: Rules folder path changes required VS Code restart in marketplace version
+- **After**: Changes take effect immediately, matching debug mode behavior
+- **Consistency**: Debug and marketplace versions now behave identically
+
+#### **Enhanced Reliability**
+- **Smart Cache Management**: Cache invalidation occurs at all appropriate points
+- **Real-time Updates**: All configuration changes now reflect immediately
+- **Better Debugging**: Enhanced logging helps diagnose cache-related issues
+
+### 🔧 Technical Details
+
+#### **Cache Clearing Triggers**
+1. **File System Changes**: Rule files modified/added/deleted (existing)
+2. **Configuration Changes**: Rules folder path modified (NEW)
+3. **Extension State Changes**: Manual disable via status bar (NEW)
+
+#### **Cache Lifecycle**
+- **Cache Hit**: Valid cache used for faster performance
+- **Cache Miss**: New config generated when cache invalid or cleared
+- **Cache Clear**: Forced invalidation on relevant user actions
+- **Cache Rebuild**: Automatic regeneration on next lint operation
+
+This fix resolves the inconsistency between development and production environments, ensuring seamless rule management across all deployment scenarios.
+
 ## [0.1.4] - 2025-07-14
 
 ### 🚨 Critical Path Resolution Fix

@@ -256,86 +256,151 @@ function loadPrhDescriptionMap() {
 
           if (Array.isArray(rules)) {
             rules.forEach((rule, index) => {
-              console.log(
-                `[DEBUG] Processing rule ${index + 1} in ${filename}:`,
-                JSON.stringify(rule, null, 2)
-              );
-
-              if (rule.specs) {
-                // Old format: when specs are present
-                rule.specs.forEach((spec) => {
-                  if (spec.from) {
-                    if (!map[spec.from]) {
-                      map[spec.from] = [];
-                    }
-                    map[spec.from].push({
-                      description:
-                        spec.description || "No description provided",
-                      source: sourceLabel,
-                      expected: spec.to || rule.expected,
-                    });
-                    totalRules++;
-                  }
-                });
-              } else if (rule.pattern && rule.expected) {
-                // New format: when specs are not present, extract candidates from pattern
-                const patternStr = rule.pattern.toString();
+              try {
                 console.log(
-                  `[DEBUG] Processing pattern rule: ${patternStr} -> ${rule.expected}`
+                  `[DEBUG] Processing rule ${index + 1} in ${filename}:`,
+                  JSON.stringify(rule, null, 2)
                 );
 
-                // Extract the core pattern content
-                const matches = patternStr.match(/\/(.+?)\//);
-                if (matches && matches[1]) {
-                  const patternContent = matches[1];
-
-                  // Handle different pattern formats
-                  if (patternContent.includes("|")) {
-                    // Multiple alternatives: /VScode|VSCode|vscode/
-                    const alternatives = patternContent.split("|");
-                    alternatives.forEach((alt) => {
-                      const cleanAlt = alt.replace(/[()]/g, "").trim();
-                      if (cleanAlt && cleanAlt !== rule.expected) {
-                        if (!map[cleanAlt]) {
-                          map[cleanAlt] = [];
+                if (rule.specs) {
+                  // Old format: when specs are present
+                  rule.specs.forEach((spec, specIndex) => {
+                    try {
+                      if (spec.from) {
+                        if (!map[spec.from]) {
+                          map[spec.from] = [];
                         }
-                        map[cleanAlt].push({
+                        map[spec.from].push({
                           description:
-                            rule.description || "No description provided",
+                            spec.description || "No description provided",
                           source: sourceLabel,
-                          expected: rule.expected,
+                          expected: spec.to || rule.expected,
                         });
                         totalRules++;
-                        console.log(
-                          `[DEBUG] Added pattern rule: ${cleanAlt} -> ${rule.expected} [${sourceLabel}]`
-                        );
                       }
-                    });
-                  } else {
-                    // Single pattern: /wrong/
-                    const cleanPattern = patternContent
-                      .replace(/[()]/g, "")
-                      .trim();
-                    if (cleanPattern && cleanPattern !== rule.expected) {
-                      if (!map[cleanPattern]) {
-                        map[cleanPattern] = [];
-                      }
-                      map[cleanPattern].push({
-                        description:
-                          rule.description || "No description provided",
-                        source: sourceLabel,
-                        expected: rule.expected,
-                      });
-                      totalRules++;
-                      console.log(
-                        `[DEBUG] Added single pattern rule: ${cleanPattern} -> ${rule.expected} [${sourceLabel}]`
+                    } catch (specError) {
+                      console.warn(
+                        `[WARN] Skipping invalid spec ${specIndex + 1} in rule ${index + 1} of ${filename}:`,
+                        specError.message
                       );
                     }
+                  });
+                } else if (rule.pattern && rule.expected) {
+                  // New format: when specs are not present, extract candidates from pattern
+                  const patternStr = rule.pattern.toString();
+                  console.log(
+                    `[DEBUG] Processing pattern rule: ${patternStr} -> ${rule.expected}`
+                  );
+
+                  // Validate pattern before processing
+                  try {
+                    // Test if pattern is a valid regex
+                    if (patternStr.startsWith('/') && patternStr.endsWith('/')) {
+                      const testPattern = patternStr.slice(1, -1);
+                      new RegExp(testPattern); // This will throw if invalid
+                    }
+                  } catch (patternError) {
+                    console.warn(
+                      `[WARN] Skipping rule ${index + 1} in ${filename} - Invalid pattern "${patternStr}":`,
+                      patternError.message
+                    );
+                    return; // Skip this rule entirely
+                  }
+
+                  // For complex regex patterns, store the entire rule info using the pattern as key
+                  // This allows us to match against it later during diagnostics
+                  const patternKey = `__PATTERN__${patternStr}`;
+                  if (!map[patternKey]) {
+                    map[patternKey] = [];
+                  }
+                  map[patternKey].push({
+                    description: rule.description || "No description provided",
+                    source: sourceLabel,
+                    expected: rule.expected,
+                    originalPattern: patternStr
+                  });
+                  totalRules++;
+                  console.log(
+                    `[DEBUG] Added complex pattern rule: ${patternStr} -> ${rule.expected} [${sourceLabel}]`
+                  );
+
+                  // Extract the core pattern content for simple cases
+                  const matches = patternStr.match(/\/(.+?)\//);
+                  if (matches && matches[1]) {
+                    const patternContent = matches[1];
+
+                    try {
+                      // Handle different pattern formats
+                      if (patternContent.includes("|")) {
+                        // Multiple alternatives: /VScode|VSCode|vscode/
+                        const alternatives = patternContent.split("|");
+                        alternatives.forEach((alt) => {
+                          try {
+                            const cleanAlt = alt.replace(/[()]/g, "").trim();
+                            if (cleanAlt && cleanAlt !== rule.expected && !cleanAlt.includes("?") && !cleanAlt.includes("{") && !cleanAlt.includes("+") && !cleanAlt.includes("*")) {
+                              if (!map[cleanAlt]) {
+                                map[cleanAlt] = [];
+                              }
+                              map[cleanAlt].push({
+                                description:
+                                  rule.description || "No description provided",
+                                source: sourceLabel,
+                                expected: rule.expected,
+                              });
+                              totalRules++;
+                              console.log(
+                                `[DEBUG] Added pattern rule: ${cleanAlt} -> ${rule.expected} [${sourceLabel}]`
+                              );
+                            }
+                          } catch (altError) {
+                            console.warn(
+                              `[WARN] Skipping alternative "${alt}" in rule ${index + 1} of ${filename}:`,
+                              altError.message
+                            );
+                          }
+                        });
+                      } else if (!patternContent.includes("?") && !patternContent.includes("{") && !patternContent.includes("+") && !patternContent.includes("*") && !patternContent.includes("(")) {
+                        // Simple single pattern: /wrong/ (avoid complex regex features)
+                        const cleanPattern = patternContent
+                          .replace(/[()]/g, "")
+                          .trim();
+                        if (cleanPattern && cleanPattern !== rule.expected) {
+                          if (!map[cleanPattern]) {
+                            map[cleanPattern] = [];
+                          }
+                          map[cleanPattern].push({
+                            description:
+                              rule.description || "No description provided",
+                            source: sourceLabel,
+                            expected: rule.expected,
+                          });
+                          totalRules++;
+                          console.log(
+                            `[DEBUG] Added single pattern rule: ${cleanPattern} -> ${rule.expected} [${sourceLabel}]`
+                          );
+                        }
+                      }
+                    } catch (contentError) {
+                      console.warn(
+                        `[WARN] Skipping pattern content processing for rule ${index + 1} in ${filename}:`,
+                        contentError.message
+                      );
+                    }
+                  } else {
+                    // Pattern might be a simple string or other format
+                    console.log(`[DEBUG] Could not parse pattern: ${patternStr}`);
                   }
                 } else {
-                  // Pattern might be a simple string or other format
-                  console.log(`[DEBUG] Could not parse pattern: ${patternStr}`);
+                  console.log(
+                    `[DEBUG] Skipping rule ${index + 1} in ${filename} - Missing required pattern or expected field`
+                  );
                 }
+              } catch (ruleError) {
+                console.warn(
+                  `[WARN] Skipping invalid rule ${index + 1} in ${filename}:`,
+                  ruleError.message,
+                  rule
+                );
               }
             });
           }
@@ -382,6 +447,124 @@ function getRulesTimestamp() {
   return latestTimestamp;
 }
 
+// Validate and clean a single rule
+function validateAndCleanRule(rule, ruleIndex, filename) {
+  try {
+    // Check required fields
+    if (!rule.pattern || !rule.expected) {
+      console.warn(`[WARN] Rule ${ruleIndex + 1} in ${filename} missing required fields`);
+      return null;
+    }
+
+    // Validate pattern
+    const patternStr = rule.pattern.toString();
+    if (patternStr === '?' || patternStr === '') {
+      console.warn(`[WARN] Rule ${ruleIndex + 1} in ${filename} has invalid pattern: "${patternStr}"`);
+      return null;
+    }
+
+    // Test regex pattern if it looks like one
+    if (patternStr.startsWith('/') && patternStr.endsWith('/')) {
+      try {
+        const testPattern = patternStr.slice(1, -1);
+        new RegExp(testPattern);
+      } catch (patternError) {
+        console.warn(`[WARN] Rule ${ruleIndex + 1} in ${filename} has invalid regex pattern: "${patternStr}"`);
+        return null;
+      }
+    }
+
+    // Return cleaned rule (remove non-standard fields like 'prh')
+    const cleanedRule = {
+      pattern: rule.pattern,
+      expected: rule.expected
+    };
+
+    if (rule.description) {
+      cleanedRule.description = rule.description;
+    }
+
+    if (rule.specs) {
+      cleanedRule.specs = rule.specs;
+    }
+
+    return cleanedRule;
+  } catch (error) {
+    console.warn(`[WARN] Error validating rule ${ruleIndex + 1} in ${filename}:`, error.message);
+    return null;
+  }
+}
+
+// Create cleaned rule files for TextLint
+function createCleanedRuleFiles() {
+  const rulesFolders = getAllRulesFolders(extensionContext);
+  const cleanedFiles = [];
+  const tempDir = path.join(__dirname, 'temp-rules');
+
+  try {
+    // Create temp directory
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    let fileCounter = 0;
+
+    rulesFolders.forEach((rulesFolder) => {
+      if (fs.existsSync(rulesFolder)) {
+        const files = fs
+          .readdirSync(rulesFolder)
+          .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
+
+        files.forEach((filename) => {
+          const filePath = path.join(rulesFolder, filename);
+          
+          try {
+            const doc = yaml.load(fs.readFileSync(filePath, "utf8"));
+            const rules = doc && typeof doc === "object" && "rules" in doc ? doc.rules : undefined;
+
+            if (Array.isArray(rules)) {
+              const validRules = [];
+
+              rules.forEach((rule, index) => {
+                const cleanedRule = validateAndCleanRule(rule, index, filename);
+                if (cleanedRule) {
+                  validRules.push(cleanedRule);
+                }
+              });
+
+              // Only create cleaned file if there are valid rules
+              if (validRules.length > 0) {
+                const cleanedDoc = {
+                  version: (doc && typeof doc === 'object' && 'version' in doc) ? doc.version : 1,
+                  rules: validRules
+                };
+
+                const cleanedFileName = `cleaned-${fileCounter}-${filename}`;
+                const cleanedFilePath = path.join(tempDir, cleanedFileName);
+                
+                fs.writeFileSync(cleanedFilePath, yaml.dump(cleanedDoc), 'utf8');
+                cleanedFiles.push(cleanedFilePath);
+                fileCounter++;
+
+                console.log(`[INFO] Created cleaned rule file: ${cleanedFileName} (${validRules.length}/${rules.length} rules valid)`);
+              } else {
+                console.warn(`[WARN] No valid rules found in ${filename}, skipping file`);
+              }
+            }
+          } catch (fileError) {
+            console.error(`[ERROR] Failed to process rule file ${filename}:`, fileError.message);
+          }
+        });
+      }
+    });
+
+    return cleanedFiles;
+  } catch (error) {
+    console.error("[ERROR] Failed to create cleaned rule files:", error);
+    return [];
+  }
+}
+
 // Get cached textlint config or create new one if cache is invalid
 function getCachedTextlintConfig() {
   const currentTimestamp = getRulesTimestamp();
@@ -393,26 +576,11 @@ function getCachedTextlintConfig() {
 
   console.log("[DEBUG] Cache miss or outdated, generating new textlint config");
 
-  // Generate new config
-  const rulesFolders = getAllRulesFolders(extensionContext);
-  const ymlFiles = [];
+  // Create cleaned rule files (filters out invalid rules)
+  const cleanedRulePaths = createCleanedRuleFiles();
 
-  rulesFolders.forEach((rulesFolder) => {
-    if (fs.existsSync(rulesFolder)) {
-      const files = fs
-        .readdirSync(rulesFolder)
-        .filter((file) => file.endsWith(".yml") || file.endsWith(".yaml"));
-      files.forEach((file) => {
-        ymlFiles.push(path.join(rulesFolder, file));
-      });
-    }
-  });
-
-  // Validate files exist
-  const validYmlFiles = ymlFiles.filter((filePath) => fs.existsSync(filePath));
-
-  let finalRulePaths = validYmlFiles;
-  if (validYmlFiles.length === 0) {
+  let finalRulePaths = cleanedRulePaths;
+  if (cleanedRulePaths.length === 0) {
     const extensionPath = extensionContext ? extensionContext.extensionPath : __dirname;
     const defaultRulePath = path.join(extensionPath, "prh-rules", "prh.yml");
     if (fs.existsSync(defaultRulePath)) {
@@ -430,7 +598,11 @@ module.exports = {
 };`;
 
   // Cache the result
-  cachedRulesConfig = { configContent, rulePaths: finalRulePaths };
+  cachedRulesConfig = { 
+    configContent, 
+    rulePaths: finalRulePaths,
+    cleanedFiles: cleanedRulePaths // Keep track of cleaned files for cleanup
+  };
   cachedRulesTimestamp = currentTimestamp;
 
   return cachedRulesConfig;
@@ -462,6 +634,7 @@ function setupRulesFolderWatcher() {
             cachedRulesConfig = null;
             cachedRulesTimestamp = null;
             prhDescMap = loadPrhDescriptionMap();
+            console.log("[DEBUG] Cache cleared due to rule file change");
           }
         });
         folderWatchers.push(watcher);
@@ -603,6 +776,10 @@ function activate(context) {
           );
           // Clear diagnostics when disabled
           diagnosticCollection.clear();
+          // Clear cache when manually disabled
+          cachedRulesConfig = null;
+          cachedRulesTimestamp = null;
+          console.log("[DEBUG] Cache cleared due to manual disable");
         }
 
         updateStatusBar();
@@ -900,31 +1077,77 @@ function activate(context) {
 
             let ruleInfos = prhDescMap[originalText];
 
-            // If direct match fails, try to find a pattern that matches
+            // If direct match fails, try enhanced pattern matching
             if (!ruleInfos) {
               console.log(
-                `[DEBUG] Direct match failed, trying pattern matching for: "${originalText}"`
+                `[DEBUG] Direct match failed, trying enhanced matching for: "${originalText}"`
               );
+              
+              // Try partial matching - look for keys that are substrings of originalText
               for (const [key, infos] of Object.entries(prhDescMap)) {
                 try {
-                  // If the key looks like a regex pattern, try to match it
+                  // Method 1: Check stored pattern keys (complex regex patterns)
+                  if (key.startsWith('__PATTERN__')) {
+                    const patternStr = key.substring('__PATTERN__'.length);
+                    console.log(`[DEBUG] Testing stored pattern: ${patternStr} against "${originalText}"`);
+                    
+                    // Extract regex from pattern string like /pattern/flags
+                    const matches = patternStr.match(/^\/(.+?)\/([gimuy]*)$/);
+                    if (matches) {
+                      try {
+                        const regexPattern = new RegExp(matches[1], matches[2]);
+                        if (regexPattern.test(originalText)) {
+                          console.log(
+                            `[DEBUG] Stored pattern match found: "${patternStr}" matches "${originalText}"`
+                          );
+                          ruleInfos = infos;
+                          break;
+                        }
+                      } catch (regexError) {
+                        console.log(`[DEBUG] Error testing stored pattern "${patternStr}":`, regexError.message);
+                      }
+                    }
+                    continue;
+                  }
+                  
+                  // Method 2: Check if the key is contained in originalText
+                  if (originalText.includes(key)) {
+                    console.log(
+                      `[DEBUG] Substring match found: "${key}" in "${originalText}"`
+                    );
+                    ruleInfos = infos;
+                    break;
+                  }
+                  
+                  // Method 3: Check if originalText is contained in key (reverse check)
+                  if (key.includes(originalText)) {
+                    console.log(
+                      `[DEBUG] Reverse substring match found: "${originalText}" in "${key}"`
+                    );
+                    ruleInfos = infos;
+                    break;
+                  }
+                  
+                  // Method 4: Regex pattern matching for complex patterns
                   if (
                     key.includes("[") ||
                     key.includes("+") ||
                     key.includes("*") ||
-                    key.includes("?")
+                    key.includes("?") ||
+                    key.includes("|")
                   ) {
-                    const regexPattern = new RegExp(key);
+                    const regexPattern = new RegExp(key, "g");
                     if (regexPattern.test(originalText)) {
                       console.log(
-                        `[DEBUG] Pattern "${key}" matches "${originalText}"`
+                        `[DEBUG] Regex pattern "${key}" matches "${originalText}"`
                       );
                       ruleInfos = infos;
                       break;
                     }
                   }
                 } catch (e) {
-                  // Ignore regex errors
+                  // Ignore regex errors and continue
+                  console.log(`[DEBUG] Error testing pattern "${key}":`, e.message);
                 }
               }
             }
@@ -1045,8 +1268,12 @@ function activate(context) {
         console.log(
           "Smart Proofreader rules folder setting changed. Reloading rules..."
         );
+        // Clear cache when rules folder path changes
+        cachedRulesConfig = null;
+        cachedRulesTimestamp = null;
         prhDescMap = loadPrhDescriptionMap();
         setupRulesFolderWatcher();
+        console.log("[DEBUG] Cache cleared due to rules folder path change");
       }
       if (e.affectsConfiguration("smartProofreader.enabledFileTypes")) {
         console.log(
@@ -1070,6 +1297,35 @@ function activate(context) {
   context.subscriptions.push(configChangeDisposable);
 }
 
+// Clean up temporary rule files
+function cleanupTempFiles() {
+  try {
+    const tempDir = path.join(__dirname, 'temp-rules');
+    if (fs.existsSync(tempDir)) {
+      const files = fs.readdirSync(tempDir);
+      files.forEach((file) => {
+        const filePath = path.join(tempDir, file);
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`[DEBUG] Cleaned up temp file: ${file}`);
+        } catch (deleteError) {
+          console.warn(`[WARN] Failed to delete temp file ${file}:`, deleteError.message);
+        }
+      });
+      
+      // Try to remove the directory if empty
+      try {
+        fs.rmdirSync(tempDir);
+        console.log(`[DEBUG] Cleaned up temp directory: ${tempDir}`);
+      } catch (dirError) {
+        // Directory not empty or other error, ignore
+      }
+    }
+  } catch (error) {
+    console.warn("[WARN] Error during temp files cleanup:", error.message);
+  }
+}
+
 // This method is called when your extension is deactivated
 function deactivate() {
   // Clean up all folder watchers
@@ -1079,6 +1335,9 @@ function deactivate() {
     }
   });
   folderWatchers = [];
+  
+  // Clean up temporary files
+  cleanupTempFiles();
 }
 
 module.exports = {
