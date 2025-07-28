@@ -1061,10 +1061,32 @@ function activate(context) {
 
       const diagnostics = [];
       if (results && results[0] && results[0].messages.length > 0) {
+        console.log(`[DEBUG] Total messages from textlint: ${results[0].messages.length}`);
+        
         for (const msg of results[0].messages) {
+          console.log(`[DEBUG] Raw textlint message:`, {
+            message: msg.message,
+            line: msg.line,
+            column: msg.column,
+            range: msg.range,
+            ruleId: msg.ruleId
+          });
+          
+          // Skip messages that don't look like PRH corrections
+          if (!msg.message || typeof msg.message !== 'string') {
+            console.log(`[DEBUG] Skipping non-string message:`, msg.message);
+            continue;
+          }
+          
+          // Check if message matches the expected PRH format "original => expected"
+          const match = /^(.*?) => (.*)$/.exec(msg.message.trim());
+          if (!match) {
+            console.log(`[DEBUG] Skipping message with unexpected format: "${msg.message}"`);
+            continue;
+          }
+          
           let diagMsg = msg.message;
           // Add PRH description with source file information
-          const match = /^(.*?) => (.*)$/.exec(msg.message);
           if (match) {
             const originalText = match[1];
             const expectedText = match[2];
@@ -1188,14 +1210,35 @@ function activate(context) {
           const messageMatch = /^(.*?) => (.*)$/.exec(msg.message);
           if (messageMatch) {
             const originalText = messageMatch[1];
+            const expectedText = messageMatch[2];
+            
+            // Skip diagnostics with empty or whitespace-only content on either side
+            if (!originalText || originalText.trim() === '' || 
+                !expectedText || expectedText.trim() === '') {
+              console.log(`[DEBUG] Skipping diagnostic with empty content: "${msg.message}"`);
+              continue;
+            }
+            
+            // Skip diagnostics where original and expected are the same
+            if (originalText.trim() === expectedText.trim()) {
+              console.log(`[DEBUG] Skipping diagnostic with identical content: "${msg.message}"`);
+              continue;
+            }
+            
             rangeLength = originalText.length;
             console.log(
               `[DEBUG] Extracted original text: "${originalText}", length: ${rangeLength}`
             );
-          } else if (msg.range && msg.range.length >= 2) {
-            // Use textlint's range information if message parsing fails
-            rangeLength = msg.range[1] - msg.range[0];
-            console.log(`[DEBUG] Using textlint range, length: ${rangeLength}`);
+          } else {
+            // If message doesn't match expected format, skip this diagnostic
+            console.log(`[DEBUG] Skipping diagnostic with unexpected format: "${msg.message}"`);
+            continue;
+          }
+
+          // Ensure minimum range length of 1 to avoid zero-width diagnostics
+          if (rangeLength <= 0) {
+            rangeLength = 1;
+            console.log(`[DEBUG] Adjusted range length to minimum: ${rangeLength}`);
           }
 
           endPos = new vscode.Position(

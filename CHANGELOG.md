@@ -2,6 +2,78 @@
 
 All notable changes to the "Smart Proofreader" extension will be documented in this file.
 
+## [0.2.0] - 2025-07-28
+
+### 🚨 Critical Diagnostic Display Fix
+
+#### **Fixed Empty Diagnostic Information Bug**
+- **Issue**: Markdown and other text files showing empty diagnostic messages (" => ") at line endings
+- **User Report**: Lines without actual errors displaying blank correction suggestions
+- **Root Cause**: Diagnostic system was processing empty strings or whitespace-only matches from textlint
+- **Impact**: Users seeing confusing empty diagnostic markers that provided no useful information
+
+#### **Enhanced Diagnostic Filtering**
+- **Empty Text Detection**: Skip diagnostics with empty or whitespace-only original text
+- **Range Length Validation**: Ensure minimum diagnostic range length to prevent zero-width highlights
+- **Message Content Validation**: Validate extracted text content before creating diagnostics
+- **Clean Display**: Only show meaningful diagnostic information to users
+
+#### **Technical Implementation**
+```javascript
+// New diagnostic filtering logic
+const messageMatch = /^(.*?) => (.*)$/.exec(msg.message);
+if (messageMatch) {
+  const originalText = messageMatch[1];
+  
+  // Skip diagnostics with empty or whitespace-only original text
+  if (!originalText || originalText.trim() === '') {
+    console.log(`[DEBUG] Skipping diagnostic with empty original text`);
+    continue; // Skip this diagnostic entirely
+  }
+  
+  rangeLength = originalText.length;
+}
+
+// Ensure minimum range length to avoid zero-width diagnostics
+if (rangeLength <= 0) {
+  rangeLength = 1;
+}
+```
+
+#### **Debug Logging Enhanced**
+- **Empty Text Detection**: `"[DEBUG] Skipping diagnostic with empty original text"`
+- **Range Adjustment**: `"[DEBUG] Adjusted range length to minimum: 1"`
+- **Content Validation**: Clear logging for diagnostic content validation process
+
+### 🎯 User Experience Improvements
+
+#### **Clean Diagnostic Display**
+- **Before**: Empty " => " diagnostics appearing at line endings
+- **After**: Only meaningful diagnostics with actual content are shown
+- **Visual Clarity**: Eliminates confusing empty diagnostic markers
+- **Focus**: Users see only actionable proofreading suggestions
+
+#### **File Type Impact**
+- **Markdown Files**: No more empty diagnostics at line endings ✅
+- **Text Files**: Clean diagnostic display without phantom markers ✅
+- **All Formats**: Improved diagnostic quality across all supported file types ✅
+
+### 🔧 Technical Enhancements
+
+#### **Robust Diagnostic Processing**
+- **Content Validation**: Thorough validation of diagnostic content before display
+- **Range Calculation**: Improved range length calculation with safety minimums
+- **Error Prevention**: Prevents zero-width or invalid diagnostic ranges
+- **Performance**: Reduced unnecessary diagnostic processing for empty content
+
+#### **Quality Assurance**
+- **Input Sanitization**: Clean handling of textlint output edge cases
+- **Defensive Programming**: Multiple validation layers prevent invalid diagnostics
+- **User-Focused**: Only display diagnostics that provide value to users
+- **Maintainable**: Clear separation of validation logic for future enhancements
+
+This fix ensures that users only see meaningful, actionable diagnostic information, eliminating the confusion caused by empty diagnostic markers in their text files.
+
 ## [0.1.9] - 2025-07-25
 
 ### 🚨 Critical Complex Regex Pattern Support
@@ -283,7 +355,7 @@ if (!ruleInfos) {
 #### **Backward Compatibility**
 - **Zero Breaking Changes**: All existing exact matches continue to work
 - **Enhanced Coverage**: Only adds new matching capabilities
-- **Preserved Behavior**: CloudWatch Events and other working rules unchanged
+- **Preserved Behavior**: All existing working rules unchanged
 
 This fix resolves the diagnostic information gap that was causing users to miss important rule context for many valid PRH rule detections.
 
